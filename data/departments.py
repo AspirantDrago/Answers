@@ -9,7 +9,7 @@ class Departments(SqlAlchemyBase):
     name = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
     institut_id = sqlalchemy.Column(sqlalchemy.Integer,
                                 sqlalchemy.ForeignKey("institutes.id"), nullable=False, default=3)
-    institut = orm.relation('Institutes', backref='departments')
+    institute = orm.relation('Institutes', backref='departments')
 
     def __str__(self):
         return self.name

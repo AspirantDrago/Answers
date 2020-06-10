@@ -2,6 +2,9 @@ from .db_session import SqlAlchemyBase, orm
 import sqlalchemy
 
 
+from .distractors import Distractors
+
+
 class Questions(SqlAlchemyBase):
     __tablename__ = 'questions'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
@@ -16,13 +19,17 @@ class Questions(SqlAlchemyBase):
     ordered = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=False)
     completed = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=False)
 
+    @property
+    def answers(self):
+        return [x for x in self.distractors if x.question == self and x.correct]
 
     @property
     def name(self):
-        return str(self.text)[:20]
+        return str(self.text)[:50]
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
         return f'<Questions {self.id} "{self.name}">'
+

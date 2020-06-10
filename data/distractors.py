@@ -15,7 +15,7 @@ class Distractors(SqlAlchemyBase):
 
     @property
     def name(self):
-        return str(self.text)[:20]
+        return str(self.text)[:100]
 
     def __str__(self):
         return self.name

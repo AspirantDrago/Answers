@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template, request
 import os
 import logging
 from flask_login import LoginManager, logout_user, login_required
@@ -56,6 +56,61 @@ def load_user(user_id):
 def logout():
     logout_user()
     return redirect("/login")
+
+
+@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>')
+def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
+    universitet = session.query(Universitets).get(universitet_id)
+    institute = session.query(Institutes).filter(Institutes.universitet == universitet,
+                                                 Institutes.inner_id == institute_id).one()
+    departament = session.query(Departments).filter(Departments.institute == institute,
+                                                 Departments.inner_id == departament_id).one()
+    subj = session.query(Subjects).filter(Subjects.departments == departament,
+                                                 Subjects.inner_id == subject_id).one()
+    quests = session.query(Questions).filter(Questions.subject == subj).all()
+    return render_template('list.html', quests=quests, subj=subj)
+
+
+@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>')
+def question(universitet_id, institute_id, departament_id, subject_id, id):
+    universitet = session.query(Universitets).get(universitet_id)
+    institute = session.query(Institutes).filter(Institutes.universitet == universitet,
+                                                 Institutes.inner_id == institute_id).one()
+    departament = session.query(Departments).filter(Departments.institute == institute,
+                                                 Departments.inner_id == departament_id).one()
+    subj = session.query(Subjects).filter(Subjects.departments == departament,
+                                                 Subjects.inner_id == subject_id).one()
+    quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
+    return render_template('quest.html', quest=quest)
+
+
+@app.route('/new', methods=['GET', 'POST'])
+def new():
+    if request.method == 'POST':
+        try:
+            text = request.form.get('text', '')
+            inner_id = int(request.form.get('inner_id', 0))
+            answer = request.form.get('answer', '')
+            if text and answer:
+                subj = session.query(Subjects).get(1)
+                q = Questions(
+                    inner_id=inner_id,
+                    text=text,
+                    subject=subj,
+                    completed=True
+                )
+                session.add(q)
+                session.commit()
+                a = Distractors(
+                    text=answer,
+                    question=q,
+                    correct=True
+                )
+                session.add(a)
+                session.commit()
+        except BaseException:
+            pass
+    return render_template('new.html')
 
 
 if __name__ == '__main__':

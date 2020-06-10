@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% for quest in quests %}
+        <div class="card  {% if quest.completed %}border-success{% else %}border-secondary{% endif %}">
+            <div class="card-header">
+                {{ quest.inner_id }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title {% if quest.completed %}text-success{% else %}text-secondary{% endif %}">
+                    {{ quest.name }}
+                </h5>
+                {% if quest.completed %}
+                {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        Нет ответа
+                    </div>
+                {% endif %}
+                <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}"
+                   class="btn {% if quest.completed %}btn-success{% else %}btn-secondary{% endif %}">
+                    Открыть
+                </a>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
