@@ -1,26 +1,60 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {% for quest in quests %}
-        <div class="card  {% if quest.completed %}border-success{% else %}border-secondary{% endif %}">
-            <div class="card-header">
-                {{ quest.inner_id }}
+    {% with subject=subj %}
+        {% include 'head_subject.html' %}
+    {% endwith %}
+    <div class="col-12">
+        <form class="card card-sm" action="#" method="post">
+            <div class="card-body row no-gutters align-items-center">
+                <div class="col-auto">
+                    <i class="fas fa-search h4 text-body"></i>
+                </div>
+                <div class="col">
+                    <input class="form-control form-control-lg form-control-borderless"
+                           type="search" placeholder="Введите часть вопроса"
+                           name="search-text" value="{{ search_text }}">
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-lg btn-success" type="submit">Поиск</button>
+                </div>
             </div>
-            <div class="card-body">
-                <h5 class="card-title {% if quest.completed %}text-success{% else %}text-secondary{% endif %}">
-                    {{ quest.name }}
-                </h5>
-                {% if quest.completed %}
-                {% else %}
-                    <div class="alert alert-warning" role="alert">
-                        Нет ответа
-                    </div>
-                {% endif %}
-                <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}"
-                   class="btn {% if quest.completed %}btn-success{% else %}btn-secondary{% endif %}">
-                    Открыть
-                </a>
+        </form>
+    </div>
+    <br>
+    <div class="col-12">
+        {% if search_text %}
+            <h5>
+                Результаты поиска для <strong>{{ search_text }}</strong>:
+            </h5>
+        {% endif %}
+        {% if not quests %}
+            <div class="alert alert-info" role="alert">
+                Заданий не найдено!
             </div>
-        </div>
-    {% endfor %}
+        {% elif many_pages %}
+            <h6>
+                Показаны первые <strong>{{ quests|length }}</strong> заданий
+            </h6>
+        {% endif %}
+        {% for quest in quests %}
+            <div class="card  {% if quest.completed %}border-success{% else %}border-secondary{% endif %}">
+                <div class="card-header">
+                    <strong>{{ loop.index }}.</strong> {{ quest.name | safe }}
+                </div>
+                <div class="card-body">
+                    {% if quest.completed %}
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            Нет ответа
+                        </div>
+                    {% endif %}
+                    <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}"
+                       class="btn {% if quest.completed %}btn-success{% else %}btn-secondary{% endif %}">
+                        Открыть
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% endblock %}

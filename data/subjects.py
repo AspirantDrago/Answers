@@ -11,6 +11,11 @@ class Subjects(SqlAlchemyBase):
                                 sqlalchemy.ForeignKey("departments.id"), nullable=False)
     departments = orm.relation('Departments', backref='subjects')
 
+    def __init__(self, name, departments_id, inner_id=None):
+        self.name = name
+        self.departments_id = departments_id
+        self.inner_id = inner_id
+
     def __str__(self):
         return self.name
 

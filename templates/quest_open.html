@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% with subject=quest.subject %}
+        {% include 'head_subject.html' %}
+    {% endwith %}
+    <div class="card {% if quest.completed %}border-success{% else %}border-secondary{% endif %}">
+        <div class="card-header">
+            {{ quest.inner_id }}
+        </div>
+        <div class="card-body">
+            <h5 class="card-title {% if quest.completed %}text-success{% else %}text-secondary{% endif %}">
+                {{ quest.name | safe }}
+            </h5>
+            <p class="card-text">{{ quest.text | safe }}</p>
+            {% if quest.completed %}
+                {% if quest.answers | count > 1 %}
+                    <p>
+                        <strong>Ответы:</strong>
+                    </p>
+                    {% if quest.ordered %}
+                        <ol>
+                    {% else %}
+                        <ul>
+                    {% endif %}
+                        {% for answer in quest.answers %}
+                            <li>
+                                {{ answer | safe }}
+                            </li>
+                        {% endfor %}
+                    {% if quest.ordered %}
+                        </ol>
+                    {% else %}
+                        </ul>
+                    {% endif %}
+                {% else %}
+                    <p>
+                        <strong>Ответ:</strong>
+                    </p>
+                    <p>
+                        {{ quest.answers[0] | safe }}
+                    </p>
+                {% endif %}
+            {% endif %}
+            <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}"
+               class="btn btn-secondary">
+                Назад
+            </a>
+        </div>
+    </div>
+{% endblock %}

@@ -12,6 +12,7 @@ DEBUG = True
 SECRET_KEY = 'scada_system'
 REMEMBER_USER = False
 FLASK_ADMIN_SWATCH = 'Spacelab'
+MAX_SEARCH_ELEMENTS = 10
 
 
 def create_root():

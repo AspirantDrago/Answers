@@ -7,6 +7,9 @@ class Universitets(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     name = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
 
+    def __init__(self, name):
+        self.name = name
+
     def __str__(self):
         return self.name
 
