@@ -42,6 +42,14 @@ admin.add_view(AdminModelView(Distractors, session, name='Варианты от�
 babel = Babel(app)
 
 
+def prepare_text(text):
+    text = text.replace('\n\r', ' ').replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+    while '  ' in text:
+        text = text.replace('  ', ' ')
+    text = text.strip()
+    return text
+
+
 @babel.localeselector
 def get_locale():
         return 'ru'
@@ -73,7 +81,7 @@ def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
         return abort(404)
     search_text = ''
     if request.method == 'POST':
-        search_text = request.form.get('search-text', '').strip().lower()
+        search_text = prepare_text(request.form.get('search-text', '')).lower()
     if search_text:
         quests = session.query(Questions).filter(
             Questions.subject == subj,
@@ -130,6 +138,7 @@ def new():
     if request.method == 'POST':
         try:
             text = request.form.get('text', '')
+            text = prepare_text(text)
             inner_id = int(request.form.get('inner_id', 0))
             answer = request.form.get('answer', '')
             if text and answer:
@@ -213,7 +222,8 @@ def api_add_new_question():
         ordered = bool(int(request.form['ordered']))
         ztype = int(request.form['type'])
         count = int(request.form['count'])
-        text = request.form['text'].strip()
+        text = request.form['text']
+        text = prepare_text(text)
         inner_id = int(request.form['inner_id'])
         answers = [request.form[f'answer_{i}'] for i in range(count)]
 
