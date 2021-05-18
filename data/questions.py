@@ -1,6 +1,7 @@
 from .db_session import SqlAlchemyBase, orm
 import sqlalchemy
 from get_prepare_text import get_prepare_text
+import re
 
 
 from .distractors import Distractors
@@ -39,10 +40,12 @@ class Questions(SqlAlchemyBase):
 
     @property
     def name(self):
+        p = re.compile(r'<.*?>')
+        text = p.sub('', self.text)
         max_len = 50
-        if len(self.text) <= max_len:
-            return self.text
-        text = self.text[:max_len]
+        if len(text) <= max_len:
+            return text
+        text = text[:max_len]
         if ' ' in text:
             text = text[:text.rindex(' ')]
         return text + ' ...'
