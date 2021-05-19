@@ -5,7 +5,7 @@
         {% include 'head_subject.html' %}
     {% endwith %}
     <div class="col-12">
-        <form class="card card-sm" action="#" method="post">
+        <form class="card card-sm" action="#" method="get">
             <div class="card-body row no-gutters align-items-center">
                 <div class="col-auto">
                     <i class="fas fa-search h4 text-body"></i>
@@ -49,7 +49,7 @@
                             Нет ответа
                         </div>
                     {% endif %}
-                    <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}"
+                    <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}?search-text={{ search_text | urlencode }}"
                        class="btn {% if quest.completed %}btn-success{% else %}btn-secondary{% endif %}">
                         Открыть
                     </a>

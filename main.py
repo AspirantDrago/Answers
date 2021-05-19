@@ -1,11 +1,18 @@
-from flask import Flask, render_template, request, abort
+from flask import Flask, render_template, request, abort, jsonify
 import os
 import logging
 from flask_login import LoginManager, logout_user, login_required
 from flask_admin import Admin
 from flask_babelex import Babel
 import json
+import hashlib
+import uuid
 from sqlalchemy.orm.exc import NoResultFound
+import base64
+import re
+
+from PIL import Image
+from io import BytesIO
 
 from config import *
 from data.users import User
@@ -40,6 +47,21 @@ admin.add_view(AdminModelView(Subjects, session, name='Дисциплины'))
 admin.add_view(AdminModelView(Questions, session, name='Вопросы'))
 admin.add_view(AdminModelView(Distractors, session, name='Варианты ответов'))
 babel = Babel(app)
+images = dict()
+
+
+def decode_base64(data, altchars=b'+/'):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    data = re.sub(rb'[^a-zA-Z0-9%s]+' % altchars, b'', data)  # normalize
+    missing_padding = len(data) % 4
+    if missing_padding:
+        data += b'='* (4 - missing_padding)
+    return base64.b64decode(data, altchars)
 
 
 def prepare_text(text):
@@ -52,7 +74,7 @@ def prepare_text(text):
 
 @babel.localeselector
 def get_locale():
-        return 'ru'
+    return 'ru'
 
 
 @login_manager.user_loader
@@ -67,21 +89,20 @@ def logout():
     return redirect("/login")
 
 
-@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>', methods=['GET', 'POST'])
+@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
+           methods=['GET', 'POST'])
 def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
     try:
         universitet = session.query(Universitets).get(universitet_id)
         institute = session.query(Institutes).filter(Institutes.universitet == universitet,
                                                      Institutes.inner_id == institute_id).one()
         departament = session.query(Departments).filter(Departments.institute == institute,
-                                                     Departments.inner_id == departament_id).one()
+                                                        Departments.inner_id == departament_id).one()
         subj = session.query(Subjects).filter(Subjects.departments == departament,
-                                                     Subjects.inner_id == subject_id).one()
+                                              Subjects.inner_id == subject_id).one()
     except NoResultFound:
         return abort(404)
-    search_text = ''
-    if request.method == 'POST':
-        search_text = prepare_text(request.form.get('search-text', '')).lower()
+    search_text = prepare_text(request.args.get('search-text', '')).lower()
     if search_text:
         quests = session.query(Questions).filter(
             Questions.subject == subj,
@@ -107,30 +128,56 @@ def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
     )
 
 
-@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>')
+@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
+           methods=['DELETE'])
+def remove_subject(universitet_id, institute_id, departament_id, subject_id):
+    try:
+        universitet = session.query(Universitets).get(universitet_id)
+        institute = session.query(Institutes).filter(Institutes.universitet == universitet,
+                                                     Institutes.inner_id == institute_id).one()
+        departament = session.query(Departments).filter(Departments.institute == institute,
+                                                        Departments.inner_id == departament_id).one()
+        subj = session.query(Subjects).filter(Subjects.departments == departament,
+                                              Subjects.inner_id == subject_id).one()
+        quests = session.query(Questions).filter(Questions.subject == subj).all()
+        for quest in quests:
+            session.query(Distractors).filter(Distractors.question == quest).delete()
+            session.delete(quest)
+        session.delete(subj)
+        session.commit()
+        return jsonify({'OK': 'OK'})
+    except NoResultFound:
+        return jsonify({'error': 'not found'})
+
+
+@app.route(
+    '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>')
 def question(universitet_id, institute_id, departament_id, subject_id, id):
+    search_text = prepare_text(request.args.get('search-text', '')).lower()
     universitet = session.query(Universitets).get(universitet_id)
     institute = session.query(Institutes).filter(Institutes.universitet == universitet,
                                                  Institutes.inner_id == institute_id).one()
     departament = session.query(Departments).filter(Departments.institute == institute,
-                                                 Departments.inner_id == departament_id).one()
+                                                    Departments.inner_id == departament_id).one()
     subj = session.query(Subjects).filter(Subjects.departments == departament,
-                                                 Subjects.inner_id == subject_id).one()
+                                          Subjects.inner_id == subject_id).one()
     quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
-    return render_template('quest.html', quest=quest)
+    return render_template('quest.html', quest=quest, search_text=search_text)
 
 
-@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>/open')
+@app.route(
+    '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>/open')
 def question_open(universitet_id, institute_id, departament_id, subject_id, id):
+    search_text = prepare_text(request.args.get('search-text', '')).lower()
     universitet = session.query(Universitets).get(universitet_id)
     institute = session.query(Institutes).filter(Institutes.universitet == universitet,
                                                  Institutes.inner_id == institute_id).one()
     departament = session.query(Departments).filter(Departments.institute == institute,
-                                                 Departments.inner_id == departament_id).one()
+                                                    Departments.inner_id == departament_id).one()
     subj = session.query(Subjects).filter(Subjects.departments == departament,
-                                                 Subjects.inner_id == subject_id).one()
+                                          Subjects.inner_id == subject_id).one()
     quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
-    return render_template('quest_open.html', quest=quest)
+    return render_template('quest_open.html', quest=quest, search_text=search_text)
 
 
 @app.route('/new', methods=['GET', 'POST'])
@@ -161,6 +208,21 @@ def new():
         except BaseException:
             pass
     return render_template('new.html')
+
+
+@app.route('/api/add_new_image_png', methods=['POST'])
+def add_new_image_png():
+    try:
+        data = base64.b64decode(request.form.get('data').split(',')[1])
+        h =  hashlib.sha256(data).hexdigest()
+        if h not in images:
+            path = r'static/img/' + str(uuid.uuid1()) + '.png'
+            with open(path, 'wb') as f:
+                f.write(data)
+            images[h] = path
+        return jsonify({'status': 'ok', 'path': images[h]})
+    except BaseException as e:
+        return jsonify({'status': 'error', 'error': str(e)})
 
 
 @app.route('/api/add_new_question', methods=['POST'])
@@ -194,8 +256,8 @@ def api_add_new_question():
         if department_inner is not None:
             department_inner = int(department_inner)
         if session.query(Departments).filter(
-            Departments.name == department,
-            Departments.institut_id == institute_id
+                Departments.name == department,
+                Departments.institut_id == institute_id
         ).count() == 0:
             session.add(Departments(department, institute_id, department_inner))
             session.commit()
@@ -215,8 +277,8 @@ def api_add_new_question():
             session.add(Subjects(subject, department_id, subject_inner))
             session.commit()
         subject_id = int(session.query(Subjects).filter(
-                Subjects.name == subject,
-                Subjects.departments_id == department_id
+            Subjects.name == subject,
+            Subjects.departments_id == department_id
         ).one().id)
 
         ordered = bool(int(request.form['ordered']))
@@ -238,11 +300,20 @@ def api_add_new_question():
             ))
             session.commit()
     except BaseException as e:
-        return json.dumps({'error': str(e)}), 400, {'ContentType':'application/json'}
+        return json.dumps({'error': str(e)}), 400, {'ContentType': 'application/json'}
     else:
-        return json.dumps({'success': True}), 200, {'ContentType':'application/json'}
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
 
 
 if __name__ == '__main__':
+    images_path = r'static\img'
+    for filename in os.listdir(images_path):
+        filename = os.path.join(images_path, filename)
+        if os.path.isfile(filename):
+            with open(filename, 'rb') as f:
+                h = hashlib.sha256(f.read()).hexdigest()
+            images[h] = filename.replace('\\', '/')
+    print('Количество изображений:', len(images))
     port_run = int(os.environ.get("PORT", PORT))
     app.run(host=HOST, port=port_run, debug=DEBUG)
+
