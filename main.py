@@ -11,9 +11,6 @@ from sqlalchemy.orm.exc import NoResultFound
 import base64
 import re
 
-from PIL import Image
-from io import BytesIO
-
 from config import *
 from data.users import User
 from data.roles import Roles
