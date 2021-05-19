@@ -303,7 +303,7 @@ def api_add_new_question():
 
 
 if __name__ == '__main__':
-    images_path = r'static\img'
+    images_path = 'static/img'
     for filename in os.listdir(images_path):
         filename = os.path.join(images_path, filename)
         if os.path.isfile(filename):
