@@ -9,7 +9,7 @@ import hashlib
 import uuid
 from sqlalchemy.orm.exc import NoResultFound
 import base64
-import re
+from waitress import serve
 
 from config import *
 from data.users import User
@@ -33,32 +33,18 @@ login_manager.login_view = 'login'
 logging.basicConfig(level=logging.INFO)
 app.config['FLASK_ADMIN_SWATCH'] = FLASK_ADMIN_SWATCH
 admin = Admin(app, template_mode='bootstrap3', name='Административная панель')
-admin.add_view(UserAdminModelView(User, session, name='Пользователи'))
-admin.add_view(RoleAdminModelView(Roles, session, name='Роли'))
-admin.add_view(AdminModelView(Universitets, session, name='Университеты'))
-admin.add_view(AdminModelView(Institutes, session, name='Институты'))
-admin.add_view(AdminModelView(Departments, session, name='Кафедры'))
-admin.add_view(AdminModelView(Groups, session, name='Группы'))
-admin.add_view(AdminModelView(TypeQuestion, session, name='Типы вопросов'))
-admin.add_view(AdminModelView(Subjects, session, name='Дисциплины'))
-admin.add_view(AdminModelView(Questions, session, name='Вопросы'))
-admin.add_view(AdminModelView(Distractors, session, name='Варианты ответов'))
+# admin.add_view(UserAdminModelView(User, session, name='Пользователи'))
+# admin.add_view(RoleAdminModelView(Roles, session, name='Роли'))
+# admin.add_view(AdminModelView(Universitets, session, name='Университеты'))
+# admin.add_view(AdminModelView(Institutes, session, name='Институты'))
+# admin.add_view(AdminModelView(Departments, session, name='Кафедры'))
+# admin.add_view(AdminModelView(Groups, session, name='Группы'))
+# admin.add_view(AdminModelView(TypeQuestion, session, name='Типы вопросов'))
+# admin.add_view(AdminModelView(Subjects, session, name='Дисциплины'))
+# admin.add_view(AdminModelView(Questions, session, name='Вопросы'))
+# admin.add_view(AdminModelView(Distractors, session, name='Варианты ответов'))
 babel = Babel(app)
 images = dict()
-
-
-def decode_base64(data, altchars=b'+/'):
-    """Decode base64, padding being optional.
-
-    :param data: Base64 data as an ASCII byte string
-    :returns: The decoded byte string.
-
-    """
-    data = re.sub(rb'[^a-zA-Z0-9%s]+' % altchars, b'', data)  # normalize
-    missing_padding = len(data) % 4
-    if missing_padding:
-        data += b'='* (4 - missing_padding)
-    return base64.b64decode(data, altchars)
 
 
 def prepare_text(text):
@@ -76,7 +62,10 @@ def get_locale():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return session.query(User).get(user_id)
+    session = db_session.create_session()
+    result = session.query(User).get(user_id)
+    session.close()
+    return result
 
 
 @app.route('/logout')
@@ -89,6 +78,7 @@ def logout():
 @app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
            methods=['GET', 'POST'])
 def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
+    session = db_session.create_session()
     try:
         universitet = session.query(Universitets).get(universitet_id)
         institute = session.query(Institutes).filter(Institutes.universitet == universitet,
@@ -98,6 +88,8 @@ def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
         subj = session.query(Subjects).filter(Subjects.departments == departament,
                                               Subjects.inner_id == subject_id).one()
     except NoResultFound:
+        session.rollback()
+        session.close()
         return abort(404)
     search_text = prepare_text(request.args.get('search-text', '')).lower()
     if search_text:
@@ -116,18 +108,21 @@ def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
             many_pages = True
             break
         quests2.append(quest)
-    return render_template(
+    result = render_template(
         'list.html',
         quests=quests2,
         subj=subj,
         search_text=search_text,
         many_pages=many_pages
     )
+    session.close()
+    return result
 
 
 @app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
            methods=['DELETE'])
 def remove_subject(universitet_id, institute_id, departament_id, subject_id):
+    session = db_session.create_session()
     try:
         universitet = session.query(Universitets).get(universitet_id)
         institute = session.query(Institutes).filter(Institutes.universitet == universitet,
@@ -142,14 +137,18 @@ def remove_subject(universitet_id, institute_id, departament_id, subject_id):
             session.delete(quest)
         session.delete(subj)
         session.commit()
+        session.close()
         return jsonify({'OK': 'OK'})
     except NoResultFound:
+        session.rollback()
+        session.close()
         return jsonify({'error': 'not found'})
 
 
 @app.route(
     '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>')
 def question(universitet_id, institute_id, departament_id, subject_id, id):
+    session = db_session.create_session()
     search_text = prepare_text(request.args.get('search-text', '')).lower()
     universitet = session.query(Universitets).get(universitet_id)
     institute = session.query(Institutes).filter(Institutes.universitet == universitet,
@@ -159,12 +158,15 @@ def question(universitet_id, institute_id, departament_id, subject_id, id):
     subj = session.query(Subjects).filter(Subjects.departments == departament,
                                           Subjects.inner_id == subject_id).one()
     quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
-    return render_template('quest.html', quest=quest, search_text=search_text)
+    result = render_template('quest.html', quest=quest, search_text=search_text)
+    session.close()
+    return result
 
 
 @app.route(
     '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>/<int:id>/open')
 def question_open(universitet_id, institute_id, departament_id, subject_id, id):
+    session = db_session.create_session()
     search_text = prepare_text(request.args.get('search-text', '')).lower()
     universitet = session.query(Universitets).get(universitet_id)
     institute = session.query(Institutes).filter(Institutes.universitet == universitet,
@@ -174,12 +176,15 @@ def question_open(universitet_id, institute_id, departament_id, subject_id, id):
     subj = session.query(Subjects).filter(Subjects.departments == departament,
                                           Subjects.inner_id == subject_id).one()
     quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
-    return render_template('quest_open.html', quest=quest, search_text=search_text)
+    result = render_template('quest_open.html', quest=quest, search_text=search_text)
+    session.close()
+    return result
 
 
 @app.route('/new', methods=['GET', 'POST'])
 def new():
     if request.method == 'POST':
+        session = db_session.create_session()
         try:
             text = request.form.get('text', '')
             text = prepare_text(text)
@@ -203,7 +208,10 @@ def new():
                 session.add(a)
                 session.commit()
         except BaseException:
+            session.rollback()
             pass
+        finally:
+            session.close()
     return render_template('new.html')
 
 
@@ -224,6 +232,7 @@ def add_new_image_png():
 
 @app.route('/api/add_new_question', methods=['POST'])
 def api_add_new_question():
+    session = db_session.create_session()
     try:
         universitet = request.form['universitet']
         if session.query(Universitets).filter(Universitets.name == universitet).count() == 0:
@@ -284,7 +293,7 @@ def api_add_new_question():
         text = request.form['text']
         text = prepare_text(text)
         inner_id = int(request.form['inner_id'])
-        answers = [request.form[f'answer_{i}'] for i in range(count)]
+        answers = [prepare_text(request.form.get(f'answer_{i}', '')) for i in range(count)]
 
         quest = Questions(text, subject_id, ztype, ordered, True, inner_id)
         session.add(quest)
@@ -296,7 +305,10 @@ def api_add_new_question():
                 correct=True
             ))
             session.commit()
+        session.close()
     except BaseException as e:
+        session.rollback()
+        session.close()
         return json.dumps({'error': str(e)}), 400, {'ContentType': 'application/json'}
     else:
         return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
@@ -312,5 +324,8 @@ if __name__ == '__main__':
             images[h] = filename.replace('\\', '/')
     print('Количество изображений:', len(images))
     port_run = int(os.environ.get("PORT", PORT))
-    app.run(host=HOST, port=port_run, debug=DEBUG)
+    if DEBUG:
+        app.run(host=HOST, port=port_run, debug=DEBUG)
+    else:
+        serve(app, host=HOST, port=port_run)
 

@@ -5,4 +5,4 @@ alembic
 flask-wtf
 Flask-Admin
 flask-babelex
-selenium
+waitress

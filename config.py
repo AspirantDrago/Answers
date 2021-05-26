@@ -5,10 +5,9 @@ from data.type_question import TypeQuestion
 
 
 db_session.global_init("db/database.sqlite")
-session = db_session.create_session()
 HOST = '0.0.0.0'
 PORT = 80
-DEBUG = True
+DEBUG = False
 SECRET_KEY = 'scada_system'
 REMEMBER_USER = False
 FLASK_ADMIN_SWATCH = 'Spacelab'
@@ -16,6 +15,7 @@ MAX_SEARCH_ELEMENTS = 10
 
 
 def create_root():
+    session = db_session.create_session()
     root_user = session.query(User).filter(User.login == 'root').first()
     if not root_user:
         root_user = User(
@@ -25,9 +25,10 @@ def create_root():
         root_user.set_password('root')
         session.add(root_user)
         session.commit()
-
+    session.close()
 
 def add_default_record(table, params):
+    session = db_session.create_session()
     title = params['title']
     record = session.query(table).filter(table.title == title).first()
     if record:
@@ -35,6 +36,7 @@ def add_default_record(table, params):
     new_record = table(**params)
     session.add(new_record)
     session.commit()
+    session.close()
     return True
 
 
