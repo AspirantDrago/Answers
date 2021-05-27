@@ -43,7 +43,6 @@ function upload_image(text_in) {
 
 var li = $("img").length;
 var ci = 0;
-var ci_pr = 0;
 $("img").error(function () {
     var ni = parseInt($(this).attr("name").substr(4));
     if (document.images["img_" + ni].naturalWidth == 0) {
@@ -53,11 +52,6 @@ $("img").error(function () {
 
 $("img").load(function () {
     ci++;
-    var ci_pr_new = Math.floor(100 * ci / li);
-    if (ci_pr_new !== ci_pr) {
-        ci_pr = ci_pr_new;
-        console.log('Загружено изображений: ' + ci_pr + ' %');
-    }
     if (ci === li) {
         main();
     }
