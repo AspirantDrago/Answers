@@ -13,7 +13,7 @@ function sleep(ms) {
 
 function upload_image(text_in) {
     try {
-        text = $(`<p>${text_in}</p>`);
+        text = $(`<div>${text_in}</div>`);
         var imgs = text.find('img');
         var imgs_size = imgs.size();
         for (j = 0; j < imgs_size; j++) {
@@ -96,7 +96,7 @@ async function main() {
                 console.log(response);
             }
         );
-        await sleep(200);
+        await sleep(20);
     }
 }
 

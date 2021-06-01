@@ -305,13 +305,14 @@ def api_add_new_question():
                 correct=True
             ))
             session.commit()
+        cnt = session.query(Questions.id).filter(Questions.subject_id == quest.subject_id).count()
         session.close()
     except BaseException as e:
         session.rollback()
         session.close()
         return json.dumps({'error': str(e)}), 400, {'ContentType': 'application/json'}
     else:
-        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+        return json.dumps({'success': True, 'count': cnt}), 200, {'ContentType': 'application/json'}
 
 
 if __name__ == '__main__':
