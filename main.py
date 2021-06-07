@@ -295,6 +295,8 @@ def api_add_new_question():
         inner_id = int(request.form['inner_id'])
         answers = [prepare_text(request.form.get(f'answer_{i}', '')) for i in range(count)]
 
+        if session.query(Questions).filter(Questions.subject_id == subject_id, Questions.inner_id == inner_id).count():
+            raise BaseException("Дубликат вопроса")
         quest = Questions(text, subject_id, ztype, ordered, True, inner_id)
         session.add(quest)
         session.commit()
@@ -310,7 +312,7 @@ def api_add_new_question():
     except BaseException as e:
         session.rollback()
         session.close()
-        return json.dumps({'error': str(e)}), 400, {'ContentType': 'application/json'}
+        return json.dumps({'error': str(e)}), 200, {'ContentType': 'application/json'}
     else:
         return json.dumps({'success': True, 'count': cnt}), 200, {'ContentType': 'application/json'}
 

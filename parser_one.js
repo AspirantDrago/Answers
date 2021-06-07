@@ -1,11 +1,11 @@
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
-institute = "ТФ"
-institute_inner = 3
-department = "НХТ"
-department_inner = 61
-subject = "Теория химико-технологических процессов органического и нефтехимического синтеза"
-subject_inner = 27200
+institute = "IT-институт"
+institute_inner = 23
+department = "ВТИК"
+department_inner = 46
+subject = "Информатика"
+subject_inner = 159
 server = "http://127.0.0.1"
 
 
