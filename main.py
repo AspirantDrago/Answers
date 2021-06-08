@@ -24,7 +24,6 @@ from data.questions import Questions
 from data.distractors import Distractors
 from admin_view import *
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 login_manager = LoginManager()
@@ -215,11 +214,39 @@ def new():
     return render_template('new.html')
 
 
+@app.route('/api/check_question', methods=['POST'])
+def check_question():
+    session = db_session.create_session()
+    try:
+        universitet_id = int(request.form.get('universitet_id', ''))
+        institute_id = int(request.form.get('institute_id', ''))
+        departament_id = int(request.form.get('departament_id', ''))
+        subject_id = int(request.form.get('subject_id', ''))
+        inner_id = int(request.form.get('inner_id', ''))
+        universitet = session.query(Universitets).get(universitet_id)
+        institute = session.query(Institutes).filter(Institutes.universitet == universitet,
+                                                     Institutes.inner_id == institute_id).one()
+        departament = session.query(Departments).filter(Departments.institute == institute,
+                                                        Departments.inner_id == departament_id).one()
+        subj = session.query(Subjects).filter(Subjects.departments == departament,
+                                              Subjects.inner_id == subject_id).one()
+        cnt = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == inner_id).count()
+        session.close()
+        if cnt > 0:
+            return jsonify({'finded': 'yes'})
+        else:
+            return jsonify({'finded': 'no'})
+    except BaseException:
+        session.rollback()
+        session.close()
+        return jsonify({'finded': 'no'})
+
+
 @app.route('/api/add_new_image_png', methods=['POST'])
 def add_new_image_png():
     try:
-        data = base64.b64decode(request.form.get('data').split(',')[1])
-        h =  hashlib.sha256(data).hexdigest()
+        data = base64.b64decode(request.form.get('data').split(',')[-1])
+        h = hashlib.sha256(data).hexdigest()
         if h not in images:
             path = r'static/img/' + str(uuid.uuid1()) + '.png'
             with open(path, 'wb') as f:
@@ -331,4 +358,3 @@ if __name__ == '__main__':
         app.run(host=HOST, port=port_run, debug=DEBUG)
     else:
         serve(app, host=HOST, port=port_run)
-
