@@ -14,12 +14,12 @@
             </h5>
             <p class="card-text">{{ quest.text | safe }}</p>
             {% if quest.completed %}
-            <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}/{{ quest.inner_id }}/open?search-text={{ search_text | urlencode }}"
+            <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}/{{ quest.inner_id }}/open{% if search_text %}?search-text={{ search_text | urlencode }}{% endif %}"
                class="btn btn-success">
                 Посмотреть ответ
             </a>
             {% endif %}
-            <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}?search-text={{ search_text | urlencode }}"
+            <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}{% if search_text %}?search-text={{ search_text | urlencode }}{% endif %}"
                class="btn btn-secondary">
                 Назад
             </a>

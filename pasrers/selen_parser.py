@@ -8,7 +8,7 @@ import requests
 
 speciality = 'БТС'
 kafedra_code = 109
-test_name = 'Информатика'
+test_name = 'Математика 2 семестр'
 
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
@@ -20,7 +20,7 @@ subject = "Информатика"
 subject_inner = 159
 server = "http://127.0.0.1"
 
-questions = list(range(1, 10 + 1))
+questions = list(range(26, 44 + 1))
 
 
 def init():
@@ -150,13 +150,14 @@ def send_question(index):
 
 def upload_image(element):
     imgs = element.find_elements_by_tag_name('img')
+    text = str(element.get_attribute('innerHTML'))
     for img in imgs:
         data = img.screenshot_as_base64
         response = requests.post(server + '/api/add_new_image_png', data={'data': data}).json()
         if (response.get('status', '') == 'ok'):
-            driver.execute_script("arguments[0].setAttribute('src', '/' + arguments[1])", element, response['path'])
+            text = text.replace(img.get_attribute('src'), '/' + response['path'])
         print('   upload_image', response)
-    return str(element.get_attribute('innerHTML'))
+    return text
 
 
 with open('update_images.js', encoding='utf8') as f:
