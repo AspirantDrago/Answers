@@ -8,7 +8,7 @@ import requests
 
 speciality = 'БТС'
 kafedra_code = 109
-test_name = 'Физика, раздел "Электричество"'
+test_name = 'Физика. Разделы "Механика и молекулярная физика"'
 
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
@@ -20,7 +20,7 @@ subject = "Физика"
 subject_inner = 755
 server = "http://127.0.0.1"
 
-questions = list(range(1, 25 + 1))
+questions = list(range(1, 20 + 1))
 
 LIMIT_FREE_INPUT = 10
 
