@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy.orm.exc import NoResultFound
 import base64
 from waitress import serve
+import sys
 
 from config import *
 from data.users import User
@@ -345,14 +346,17 @@ def api_add_new_question():
 
 
 if __name__ == '__main__':
-    images_path = 'static/img'
-    for filename in os.listdir(images_path):
-        filename = os.path.join(images_path, filename)
-        if os.path.isfile(filename):
-            with open(filename, 'rb') as f:
-                h = hashlib.sha256(f.read()).hexdigest()
-            images[h] = filename.replace('\\', '/')
-    print('Количество изображений:', len(images))
+    DEBUG = '-debug' in sys.argv
+    PRODUCTION = '-nohashimages' not in sys.argv
+    if PRODUCTION:
+        images_path = 'static/img'
+        for filename in os.listdir(images_path):
+            filename = os.path.join(images_path, filename)
+            if os.path.isfile(filename):
+                with open(filename, 'rb') as f:
+                    h = hashlib.sha256(f.read()).hexdigest()
+                images[h] = filename.replace('\\', '/')
+        print('Количество изображений:', len(images))
     port_run = int(os.environ.get("PORT", PORT))
     if DEBUG:
         app.run(host=HOST, port=port_run, debug=DEBUG)

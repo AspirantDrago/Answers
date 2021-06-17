@@ -7,7 +7,6 @@ from data.type_question import TypeQuestion
 db_session.global_init("db/database.sqlite")
 HOST = '0.0.0.0'
 PORT = 80
-DEBUG = False
 SECRET_KEY = 'scada_system'
 REMEMBER_USER = False
 FLASK_ADMIN_SWATCH = 'Spacelab'
