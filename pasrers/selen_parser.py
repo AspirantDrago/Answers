@@ -8,7 +8,7 @@ import requests
 
 speciality = 'БТС'
 kafedra_code = 109
-test_name = 'Физика. Разделы "Механика и молекулярная физика"'
+test_name = 'Физика, раздел "Электричество"'
 
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
