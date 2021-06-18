@@ -2,25 +2,25 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException
+from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException, NoAlertPresentException
 from collections import defaultdict
 import requests
 
 speciality = 'БТС'
-kafedra_code = 109
-test_name = 'Физика, раздел "Электричество"'
+kafedra_code = 101
+test_name = 'Производство соды'
 
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
-institute = "Вышка ИнСоТех"
-institute_inner = 24
-department = "Физики"
-department_inner = 43
-subject = "Физика"
-subject_inner = 755
+institute = "ТФ"
+institute_inner = 3
+department = "НХТ"
+department_inner = 61
+subject = "Теоретические и экспериментальные методы научных исследований в химии"
+subject_inner = 37328001
 server = "http://127.0.0.1"
 
-questions = list(range(1, 20 + 1))
+questions = list(range(12, 30 + 1))
 
 LIMIT_FREE_INPUT = 10
 
@@ -38,7 +38,15 @@ def init():
     btn_go_test.click()
     wait.until(EC.element_located_selection_state_to_be((By.ID, 'click_answer'), False))
     for index in questions:
-        ans_question(index)
+        try:
+            ans_question(index)
+        except UnexpectedAlertPresentException:
+            try:
+                print(driver.switch_to.alert)
+                driver.switch_to.alert.dismiss()
+            except NoAlertPresentException:
+                print('alert not found!')
+
 
 
 def check_id(id_element):
@@ -109,8 +117,8 @@ def ans_question(index):
             inptext.send_keys(str(next_ans))
             questions_wait_ans[index] = next_ans
         else:
-            driver.find_element_by_id("inptext").send_keys("0")
-            questions_wait_ans[index] = 0
+            driver.find_element_by_id("inptext").send_keys("1")
+            questions_wait_ans[index] = 1
     wait.until(EC.element_to_be_clickable((By.ID, 'click_answer')))
     btn_click_answer.click()
     ans_question(index)
