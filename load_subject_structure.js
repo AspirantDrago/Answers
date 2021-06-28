@@ -1,5 +1,5 @@
-var kodkaf = 43;
-var ekzamen = 755;
+var kodkaf = 61;
+var ekzamen = 37328;
 
 
 function query(url, data) {
@@ -39,13 +39,13 @@ function getCount(rang, razdel, tema) {
 var s = '';
 var allCount = 0;
 var rangs = getRangs();
-rangs.forEach(function (rang, i, rangs) {
+rangs.forEach(function (rang) {
     s += `ранг ${rang}\n`;
     var razdels = getRazdels(rang);
-    razdels.forEach(function (razdel, j, razdels) {
+    razdels.forEach(function (razdel) {
         s += `    раздел ${razdel}\n`;
         var tems = getTems(rang, razdel);
-        tems.forEach(function (tema, k, tems) {
+        tems.forEach(function (tema) {
             var count = getCount(rang, razdel, tema);
             s += `        тема ${tema}            ${count}\n`;
             allCount += count;
