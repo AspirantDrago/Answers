@@ -14,14 +14,15 @@ universitet = "Уфимский государственный нефтяной 
 universitet_inner = 1
 institute = "IT-институт"
 institute_inner = 23
-department = "ВТИК"
-department_inner = 46
-subject = "Информатика"
-subject_inner = 159
+department = "ИТМ"
+department_inner = 84
+subject = "Математика"
+subject_inner = 228
 server = "http://127.0.0.1"
 
-questions = list(range(26, 44 + 1))
+questions = list(range(1, 25 + 1))
 
+LIMIT_FREE_INPUT = 10
 
 def init():
     driver.get("https://testirov.rusoil.net/startrehearsal")
@@ -70,9 +71,22 @@ def ans_question(index):
         del questions_wait_ans[index]
     if check_id("checkbox1"):
         if is_wrong:
-            pass
+            next_ans = 1 + max(questions_bad_ans[index])
+            cnt = len(driver.find_elements_by_css_selector("input[type='checkbox']"))
+            if (next_ans >= 2 ** cnt):
+                return False
+            i = 0
+            questions_wait_ans[index] = next_ans
+            driver.find_element_by_id("chancel_answer").click()
+            while next_ans:
+                i += 1
+                is_check = next_ans % 2
+                if is_check:
+                    driver.find_element_by_id(f"checkbox{i}").click()
+                next_ans //= 2
         else:
-            pass
+            driver.find_element_by_id("checkbox1").click()
+            questions_wait_ans[index] = 1
     elif check_id("radio1"):
         if is_wrong:
             next_ans = 1 + max(questions_bad_ans[index])
@@ -85,9 +99,18 @@ def ans_question(index):
             ans.click()
     else:
         if is_wrong:
-            pass
+            next_ans = 1 + max(questions_bad_ans[index])
+            if next_ans > LIMIT_FREE_INPUT:
+                print('   NOT FOUND!!!')
+                return False
+            inptext = driver.find_element_by_id("inptext")
+            inptext.click()
+            inptext.clear()
+            inptext.send_keys(str(next_ans))
+            questions_wait_ans[index] = next_ans
         else:
-            pass
+            driver.find_element_by_id("inptext").send_keys("0")
+            questions_wait_ans[index] = 0
     wait.until(EC.element_to_be_clickable((By.ID, 'click_answer')))
     btn_click_answer.click()
     ans_question(index)
@@ -124,10 +147,11 @@ def send_question(index):
         answers.append(driver.find_element_by_css_selector("input[type=radio][checked] ~ label"))
     else:
         ztype = 3
+        answers.append(driver.find_element_by_id("inptext"))
     c = len(answers)
     inner_id = int(str(driver.find_element_by_css_selector('#testpage_Ajax > span:nth-child(1)').text).strip())
-    text = upload_image(driver.find_element_by_css_selector("div.div_zadan"))
-    answers = list(map(upload_image, answers))
+    text = upload_image(driver.find_element_by_css_selector("div.div_zadan"), 0)
+    answers = list(map(lambda x: upload_image(x, ztype), answers))
     data = {
         'universitet': universitet,
         'institute': institute,
@@ -148,9 +172,12 @@ def send_question(index):
     print(response)
 
 
-def upload_image(element):
+def upload_image(element, ztype):
     imgs = element.find_elements_by_tag_name('img')
-    text = str(element.get_attribute('innerHTML'))
+    if ztype == 3:
+        text = str(element.get_attribute('value'))
+    else:
+        text = str(element.get_attribute('innerHTML'))
     for img in imgs:
         data = img.screenshot_as_base64
         response = requests.post(server + '/api/add_new_image_png', data={'data': data}).json()
