@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy.orm.exc import NoResultFound
 import base64
 from waitress import serve
+import sys
 
 from config import *
 from data.users import User
@@ -47,7 +48,9 @@ images = dict()
 
 
 def prepare_text(text):
-    text = text.replace('\n\r', ' ').replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+    text = text.replace('\n\r', ' ').replace('\r\n', ' ').replace('\n', ' ').replace('\r',
+                                                                                     ' ').replace(
+        '\t', ' ')
     while '  ' in text:
         text = text.replace('  ', ' ')
     text = text.strip()
@@ -74,30 +77,23 @@ def logout():
     return redirect("/login")
 
 
-@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
-           methods=['GET', 'POST'])
-def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
+def get_quests_list(subj=None):
     session = db_session.create_session()
-    try:
-        universitet = session.query(Universitets).get(universitet_id)
-        institute = session.query(Institutes).filter(Institutes.universitet == universitet,
-                                                     Institutes.inner_id == institute_id).one()
-        departament = session.query(Departments).filter(Departments.institute == institute,
-                                                        Departments.inner_id == departament_id).one()
-        subj = session.query(Subjects).filter(Subjects.departments == departament,
-                                              Subjects.inner_id == subject_id).one()
-    except NoResultFound:
-        session.rollback()
-        session.close()
-        return abort(404)
     search_text = prepare_text(request.args.get('search-text', '')).lower()
+    search_inner_id = prepare_text(request.args.get('search-inner-id', ''))
+    if search_inner_id:
+        try:
+            search_inner_id = str(int(search_inner_id))
+        except ValueError:
+            search_inner_id = ''
+    quests = session.query(Questions)
+    if search_inner_id:
+        quests = quests.filter(Questions.inner_id == search_inner_id)
+    if subj is not None:
+        quests = quests.filter(Questions.subject == subj)
     if search_text:
-        quests = session.query(Questions).filter(
-            Questions.subject == subj,
-            Questions.indexed_text.like(f'%{search_text}%')
-        ).all()
-    else:
-        quests = session.query(Questions).filter(Questions.subject == subj).all()
+        quests = quests.filter(Questions.indexed_text.like(f'%{search_text}%'))
+    quests = quests.all()
     many_pages = False
     indexed_texts_set = set()
     quests2 = []
@@ -112,14 +108,43 @@ def full_subjectLlist(universitet_id, institute_id, departament_id, subject_id):
         quests=quests2,
         subj=subj,
         search_text=search_text,
-        many_pages=many_pages
+        many_pages=many_pages,
+        search_inner_id=search_inner_id
     )
     session.close()
     return result
 
 
-@app.route('/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
-           methods=['DELETE'])
+@app.route('/global', methods=['GET', 'POST'])
+def global_quests_list():
+    return get_quests_list()
+
+
+@app.route(
+    '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
+    methods=['GET', 'POST'])
+def full_subjectList(universitet_id, institute_id, departament_id, subject_id):
+    session = db_session.create_session()
+    try:
+        universitet = session.query(Universitets).get(universitet_id)
+        institute = session.query(Institutes).filter(Institutes.universitet == universitet,
+                                                     Institutes.inner_id == institute_id).one()
+        departament = session.query(Departments).filter(Departments.institute == institute,
+                                                        Departments.inner_id == departament_id).one()
+        subj = session.query(Subjects).filter(Subjects.departments == departament,
+                                              Subjects.inner_id == subject_id).one()
+    except NoResultFound:
+        session.rollback()
+        session.close()
+        return abort(404)
+    response = get_quests_list(subj)
+    session.close()
+    return response
+
+
+@app.route(
+    '/univer/<int:universitet_id>/inst/<int:institute_id>/dep/<int:departament_id>/sub/<int:subject_id>',
+    methods=['DELETE'])
 def remove_subject(universitet_id, institute_id, departament_id, subject_id):
     session = db_session.create_session()
     try:
@@ -156,7 +181,8 @@ def question(universitet_id, institute_id, departament_id, subject_id, id):
                                                     Departments.inner_id == departament_id).one()
     subj = session.query(Subjects).filter(Subjects.departments == departament,
                                           Subjects.inner_id == subject_id).one()
-    quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
+    quest = session.query(Questions).filter(Questions.subject == subj,
+                                            Questions.inner_id == id).one()
     result = render_template('quest.html', quest=quest, search_text=search_text)
     session.close()
     return result
@@ -174,7 +200,8 @@ def question_open(universitet_id, institute_id, departament_id, subject_id, id):
                                                     Departments.inner_id == departament_id).one()
     subj = session.query(Subjects).filter(Subjects.departments == departament,
                                           Subjects.inner_id == subject_id).one()
-    quest = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == id).one()
+    quest = session.query(Questions).filter(Questions.subject == subj,
+                                            Questions.inner_id == id).one()
     result = render_template('quest_open.html', quest=quest, search_text=search_text)
     session.close()
     return result
@@ -230,7 +257,8 @@ def check_question():
                                                         Departments.inner_id == departament_id).one()
         subj = session.query(Subjects).filter(Subjects.departments == departament,
                                               Subjects.inner_id == subject_id).one()
-        cnt = session.query(Questions).filter(Questions.subject == subj, Questions.inner_id == inner_id).count()
+        cnt = session.query(Questions).filter(Questions.subject == subj,
+                                              Questions.inner_id == inner_id).count()
         session.close()
         if cnt > 0:
             return jsonify({'finded': 'yes'})
@@ -322,7 +350,8 @@ def api_add_new_question():
         inner_id = int(request.form['inner_id'])
         answers = [prepare_text(request.form.get(f'answer_{i}', '')) for i in range(count)]
 
-        if session.query(Questions).filter(Questions.subject_id == subject_id, Questions.inner_id == inner_id).count():
+        if session.query(Questions).filter(Questions.subject_id == subject_id,
+                                           Questions.inner_id == inner_id).count():
             raise BaseException("Дубликат вопроса")
         quest = Questions(text, subject_id, ztype, ordered, True, inner_id)
         session.add(quest)
@@ -345,14 +374,17 @@ def api_add_new_question():
 
 
 if __name__ == '__main__':
-    images_path = 'static/img'
-    for filename in os.listdir(images_path):
-        filename = os.path.join(images_path, filename)
-        if os.path.isfile(filename):
-            with open(filename, 'rb') as f:
-                h = hashlib.sha256(f.read()).hexdigest()
-            images[h] = filename.replace('\\', '/')
-    print('Количество изображений:', len(images))
+    DEBUG = '-debug' in sys.argv
+    PRODUCTION = '-nohashimages' not in sys.argv
+    if PRODUCTION:
+        images_path = 'static/img'
+        for filename in os.listdir(images_path):
+            filename = os.path.join(images_path, filename)
+            if os.path.isfile(filename):
+                with open(filename, 'rb') as f:
+                    h = hashlib.sha256(f.read()).hexdigest()
+                images[h] = filename.replace('\\', '/')
+        print('Количество изображений:', len(images))
     port_run = int(os.environ.get("PORT", PORT))
     if DEBUG:
         app.run(host=HOST, port=port_run, debug=DEBUG)

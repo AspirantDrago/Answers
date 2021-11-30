@@ -6,3 +6,5 @@ flask-wtf
 Flask-Admin
 flask-babelex
 waitress
+selenium
+requests

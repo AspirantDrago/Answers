@@ -1,11 +1,22 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {% with subject=subj %}
-        {% include 'head_subject.html' %}
-    {% endwith %}
+    {% if subj is not none %}
+        {% with subject=subj %}
+            {% include 'head_subject.html' %}
+        {% endwith %}
+    {% endif %}
     <div class="col-12">
         <form class="card card-sm" method="get">
+            {% if subj is none %}
+                <div class="card-body row no-gutters align-items-center">
+                    <div class="col">
+                        <input class="form-control form-control-lg form-control-borderless"
+                               type="search" placeholder="Введите номер вопроса"
+                               name="search-inner-id" value="{{ search_inner_id }}">
+                    </div>
+                </div>
+            {% endif %}
             <div class="card-body row no-gutters align-items-center">
                 <div class="col-auto">
                     <i class="fas fa-search h4 text-body"></i>
@@ -49,7 +60,7 @@
                             Нет ответа
                         </div>
                     {% endif %}
-                    <a href="/univer/{{ subj.departments.institute.universitet.id }}/inst/{{ subj.departments.institute.inner_id }}/dep/{{ subj.departments.inner_id }}/sub/{{ subj.inner_id }}/{{ quest.inner_id }}{% if search_text %}?search-text={{ search_text | urlencode }}{% endif %}"
+                    <a href="/univer/{{ quest.subject.departments.institute.universitet.id }}/inst/{{ quest.subject.departments.institute.inner_id }}/dep/{{ quest.subject.departments.inner_id }}/sub/{{ quest.subject.inner_id }}/{{ quest.inner_id }}{% if search_text %}?search-text={{ search_text | urlencode }}{% endif %}"
                        class="btn {% if quest.completed %}btn-success{% else %}btn-secondary{% endif %}">
                         Открыть
                     </a>
