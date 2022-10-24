@@ -1,3 +1,4 @@
+import selenium.common.exceptions
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -5,38 +6,42 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 from collections import defaultdict
 import requests
+import time
+import warnings
 
-speciality = 'БТС'
+
 kafedra_code = 109
-test_name = 'Математика 2 семестр'
+test_name = 'Физика. Раздел "Оптика"'
 
 universitet = "Уфимский государственный нефтяной технический университет"
 universitet_inner = 1
-institute = "IT-институт"
-institute_inner = 23
-department = "ИТМ"
-department_inner = 84
-subject = "Математика"
-subject_inner = 228
-server = "http://127.0.0.1"
-
-questions = list(range(1, 25 + 1))
-
+institute = "Вышка ИнСоТех"
+institute_inner = 24
+department = "Физики"
+department_inner = 43
 LIMIT_FREE_INPUT = 10
 
+questions = list(range(1, 1 + 20))
+
 def init():
-    driver.get("https://testirov.rusoil.net/startrehearsal")
-    input_spec = Select(driver.find_element_by_id('specy'))
-    input_spec.select_by_value(speciality)
-    input_kafedra = Select(driver.find_element_by_id('allkafedra'))
+    driver.implicitly_wait(10)
+    driver.get("https://testirov.rusoil.net/studytestpage#!/top/manualpage")
+    input_kafedra = Select(driver.find_elements_by_tag_name('select')[0])
     input_kafedra.select_by_value(str(kafedra_code))
-    wait.until(EC.element_located_selection_state_to_be((By.ID, 'discipline'), False))
-    input_discipline = Select(driver.find_element_by_id('discipline'))
-    input_discipline.select_by_visible_text(test_name)
-    btn_go_test = driver.find_element_by_id('go_test')
-    wait.until(EC.element_to_be_clickable((By.ID, 'go_test')))
+    wait.until(EC.element_selection_state_to_be(driver.find_elements_by_tag_name('select')[1], False))
+    while True:
+        try:
+            input_discipline = Select(driver.find_elements_by_tag_name('select')[1])
+            input_discipline.select_by_visible_text(test_name)
+        except selenium.common.exceptions.StaleElementReferenceException:
+            pass
+        else:
+            break
+    btn_go_test = driver.find_element_by_class_name('webix_button')
+    wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'webix_button')))
     btn_go_test.click()
-    wait.until(EC.element_located_selection_state_to_be((By.ID, 'click_answer'), False))
+    wait.until(EC.element_located_selection_state_to_be((By.CLASS_NAME, 'webix_list_item'), False))
+    print('GO!')
     for index in questions:
         ans_question(index)
 
@@ -50,10 +55,6 @@ def check_id(id_element):
 
 
 def ans_question(index):
-    url = str(driver.current_url)
-    url = '/'.join(url.split('/')[:-1] + [str(index)])
-    driver.get(url)
-    wait.until(EC.element_located_selection_state_to_be((By.ID, 'click_answer'), False))
     if check_question(index):
         print('   finded')
         return True
@@ -189,7 +190,8 @@ def upload_image(element, ztype):
 
 with open('update_images.js', encoding='utf8') as f:
     js_update_images = f.read()
-driver = webdriver.Firefox()
+warnings.filterwarnings("ignore")
+driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
 while True:
     questions_bad_ans = defaultdict(list)
@@ -199,4 +201,6 @@ while True:
         init()
     except BaseException as e:
         print(e, type(e))
+    input()
+    break
 driver.close()
