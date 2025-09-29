@@ -1,0 +1,10 @@
+.idea/
+.venv/
+alembic/
+pasrers/
+.gitignore
+Procfile
+runtime.txt
+alembic.ini
+parser.js
+parser_one.js

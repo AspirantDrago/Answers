@@ -116,6 +116,7 @@ def get_quests_list(subj=None):
 
 
 @app.route('/global', methods=['GET', 'POST'])
+@app.route('/')
 def global_quests_list():
     return get_quests_list()
 
